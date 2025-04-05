@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>야구 스코어보드</title>
+<style>
+    @font-face {
+      font-family: 'KBOBold';
+      src: url('fonts/KBO Dia Gothic Bold.ttf') format('truetype');
+    }
+
+    body {
+      background-color: transparent !important; /* !important 로 다른 스타일 강제 덮어쓰기 */	    
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* 스크롤바 방지 */
+      background-color: #000;
+      font-family: 'KBOBold', sans-serif;
+    }
+
+    .scoreboard {
+      width: 400px;
+      margin: 20px auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .teams {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .team-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .team-name {
+  width: 50%;
+  height: 60px;
+  padding: 0;
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
+
+    .score-box {
+  width: 20%;
+  height: 60px;
+  font-size: 32px;
+  font-weight: bold;
+  background-color: black;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+    .bases {
+      width: 30%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: ForestGreen;
+    }
+
+    .diamond {
+      width: 15px;
+      height: 15px;
+      margin: 3px;
+      background-color: #333;
+      transform: rotate(45deg);
+    }
+
+    .diamond.active {
+      background-color: yellow;
+    }
+
+    .bottom-bar {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  font-size: 32px;
+  height: 60px;
+  padding: 0;
+}
+    
+    .bottom-bar .inning {
+  width: 50%;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: black;
+}
+
+    .bottom-bar .count {
+  width: 20%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32px;
+  color: black;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}   
+
+    .bottom-bar .outs {
+  width: 30%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+    .inning {
+  width: 50%;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: black;
+  font-weight: bold;
+}
+
+    .count {
+  width: 20%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32px;
+  font-weight: bold;
+  color: black;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+    .out-label {
+      color: black;
+      font-weight: bold;
+      font-size: 25px;
+    }
+
+    .out-dot {
+  width: 10px;
+  height: 10px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background-color: #ccc;
+  display: inline-block;
+}
+.out-dot.active {
+  background-color: red;
+}
+      width: 20px;
+      height: 20px;
+      background-color: red;
+      border-radius: 50%;
+    }
+
+    .team1 { background-color: #f7931e; }
+    .team2 { background-color: #4a4a4a; }
+  
+.bases {
+  width: 30%;
+  height: 60px;
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  grid-template-rows: repeat(3, 20px);
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+}
+
+.base {
+  width: 14px;
+  height: 14px;
+  background-color: #333;
+  transform: rotate(45deg);
+}
+
+.base.active {
+  background-color: yellow;
+}
+
+.base.empty {
+  background-color: transparent;
+}
+
+.out-dot {
+  width: 10px;
+  height: 10px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background-color: #ccc;
+  display: inline-block;
+}
+.out-dot.active {
+  background-color: red;
+}
+  width: 10px;
+  height: 10px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background-color: #888;
+}
+.out-dot.active {
+  background-color: red;
+}
+
+.team-name {
+  color: #ffffff; /* 흰색으로 명확히 지정 */
+}
+
+.team1 {
+  background-color: #1e3a8a; /* 어두운 파랑 - 대비 강조 */
+}
+
+.team1 {
+  background-color: #2E7D32; /* 중간 초록 */
+}
+.team2 {
+  background-color: #F9A825; /* 머스터드 옐로우 */
+}
+.team-name {
+  color: #FFFFFF;
+}
+
+.team1 {
+  background-color: #FFA726; /* 연한 주황색 */
+}
+
+.team1 {
+  background-color: #FB8C00 !important; /* 딥 오렌지 */
+}
+
+.team1 {
+  background-color: #FB8C00;
+  color: #FFFFFF;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8); /* Glow */
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px #FB8C00; }
+  50% { box-shadow: 0 0 25px #FB8C00; }
+  100% { box-shadow: 0 0 10px #FB8C00; }
+}
+
+@keyframes flash {
+  0%   { box-shadow: 0 0 10px #fff; transform: scale(1); }
+  50%  { box-shadow: 0 0 30px #fff; transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px #fff; transform: scale(1); }
+}
+
+.flash {
+  animation: flash 0.5s ease-in-out;
+}
+
+.team2 {
+  animation: pulse 2s infinite;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes flash {
+  0%   { box-shadow: 0 0 10px #fff, 0 0 0 #fff; transform: scale(1); }
+  50%  { box-shadow: 0 0 40px #fff, 0 0 20px #fff; transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px #fff, 0 0 0 #fff; transform: scale(1); }
+}
+
+.flash {
+  animation: flash 0.6s ease-in-out;
+}
+
+.flash {
+  animation: flash 0.6s ease-in-out;
+}
+@keyframes flash {
+  0% { box-shadow: 0 0 10px #fff; transform: scale(1); }
+  50% { box-shadow: 0 0 40px #fff; transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px #fff; transform: scale(1); }
+}
+.out-dot {
+  width: 10px;
+  height: 10px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background-color: #888;
+}
+.out-dot.active {
+  background-color: red;
+}
+
+.count-visual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+}
+.label {
+  font-weight: bold;
+  color: #fff;
+}
+.dots {
+  display: flex;
+  gap: 5px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #888; /* default gray */
+}
+.dot.ball.active {
+  background-color: limegreen;
+}
+.dot.strike.active {
+  background-color: gold;
+}
+
+.count-visual {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+}
+.label {
+  font-weight: bold;
+  color: #fff;
+}
+.dots {
+  display: flex;
+  gap: 5px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #888;
+}
+.dot.ball.active {
+  background-color: limegreen;
+}
+.dot.strike.active {
+  background-color: gold;
+}
+
+.out-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.out-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #888;
+}
+.out-dot.active {
+  background-color: red;
+}
+.label {
+  font-weight: bold;
+  color: #fff;
+  margin-right: 5px;
+}
+
+.label {
+  font-weight: bold;
+  font-size: 20px;
+  color: #FFFFFF;
+  font-family: 'KBO Dia Gothic', sans-serif;
+}
+
+.label {
+  color: #000000 !important;
+}
+
+.count-visual, .outs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-right: 10px;
+}
+.outs {
+  margin-left: 20px;
+}
+</style>
+</head>
+<body>
+<div class="scoreboard">
+<div class="teams">
+<div class="team-row">
+<div class="team-name team1" id="team1">화식초</div>
+<div class="score-box" id="score1">5</div>
+<div class="bases">
+<div class="base empty"></div>
+<div class="base" id="base2"></div>
+<div class="base empty"></div>
+<div class="base" id="base3"></div>
+<div class="base empty"></div>
+<div class="base" id="base1"></div>
+<div class="base empty"></div>
+<div class="base empty"></div>
+<div class="base empty"></div>
+</div>
+</div>
+<div class="team-row">
+<div class="team-name team2" id="team2">명식초</div>
+<div class="score-box" id="score2">0</div>
+<div class="bases"></div>
+</div>
+</div>
+<div class="bottom-bar">
+<div class="inning" id="inning">1회초</div>
+<div class="count" id="count">
+<div class="count-visual">
+<div class="label">B</div>
+<div class="dots balls">
+<div class="dot ball" id="ball1"></div>
+<div class="dot ball" id="ball2"></div>
+<div class="dot ball" id="ball3"></div>
+</div>
+<div class="label">S</div>
+<div class="dots strikes">
+<div class="dot strike" id="strike1"></div>
+<div class="dot strike" id="strike2"></div>
+</div>
+</div>
+</div>
+<div class="outs" id="outs">
+<div class="label">O</div>
+<div class="out-dots">
+<div class="out-dot" id="dot1"></div>
+<div class="out-dot" id="dot2"></div>
+</div>
+</div>
+</div>
+</div>
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9999;"></canvas><script>
+function updateFromStorage() {
+  const get = (key) => localStorage.getItem(key) || "";
+  document.getElementById("team1").textContent = get("team1") || "화식초";
+  document.getElementById("team2").textContent = get("team2") || "명식초";
+  document.getElementById("score1").textContent = get("score1") || "0";
+  document.getElementById("score2").textContent = get("score2") || "0";
+  document.getElementById("inning").textContent = get("inning") || "1회초";
+
+  const outCount = parseInt(get("out") || "0");
+  document.getElementById("dot1").classList.toggle("active", outCount >= 1);
+  document.getElementById("dot2").classList.toggle("active", outCount >= 2);
+
+  ["base1", "base2", "base3"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (get(id) === "true") {
+        el.classList.add("active");
+      } else {
+        el.classList.remove("active");
+      }
+    }
+  });
+}
+
+// confetti 간단 효과
+function confetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  for (let i = 0; i < 100; i++) {
+    particles.push({
+      x: canvas.width * Math.random(),
+      y: -10,
+      radius: 2 + Math.random() * 4,
+      color: `hsl(${Math.random() * 360}, 100%, 60%)`,
+      speedY: Math.random() * 3 + 2,
+      speedX: (Math.random() - 0.5) * 2
+    });
+  }
+  let frames = 0;
+  const interval = setInterval(() => {
+    frames++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.y += p.speedY;
+      p.x += p.speedX;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    });
+    if (frames > 30) clearInterval(interval);
+    setTimeout(() => ctx.clearRect(0, 0, canvas.width, canvas.height), 1000);
+  }, 50);
+}
+
+function launchConfetti() {
+  confetti();
+}
+
+let prevScore1 = localStorage.getItem("score1") || "0";
+let prevScore2 = localStorage.getItem("score2") || "0";
+
+function flashIfScored() {
+  const newScore1 = localStorage.getItem("score1") || "0";
+  const newScore2 = localStorage.getItem("score2") || "0";
+
+  if (newScore1 !== prevScore1) {
+    const el = document.getElementById("team1");
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 500);
+    launchConfetti();
+    prevScore1 = newScore1;
+  }
+  if (newScore2 !== prevScore2) {
+    const el = document.getElementById("team2");
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 500);
+    launchConfetti();
+    prevScore2 = newScore2;
+  }
+}
+
+setInterval(() => {
+  updateFromStorage(); updateCountDots(); updateOutDots(); updateCountDots();
+  flashIfScored();
+}, 500);
+function updateCountDots() {
+  const ball = parseInt(localStorage.getItem("ball") || "0");
+  const strike = parseInt(localStorage.getItem("strike") || "0");
+
+  [1, 2, 3].forEach(i => {
+    const dot = document.getElementById("ball" + i);
+    if (dot) {
+      dot.className = "dot ball" + (i <= ball ? " active" : "");
+    }
+  });
+  [1, 2].forEach(i => {
+    const dot = document.getElementById("strike" + i);
+    if (dot) {
+      dot.className = "dot strike" + (i <= strike ? " active" : "");
+    }
+  });
+}
+
+function updateCountDots() {
+  const ball = parseInt(localStorage.getItem("ball") || "0");
+  const strike = parseInt(localStorage.getItem("strike") || "0");
+
+  [1, 2, 3].forEach(i => {
+    const dot = document.getElementById("ball" + i);
+    if (dot) {
+      dot.className = "dot ball" + (i <= ball ? " active" : "");
+    }
+  });
+  [1, 2].forEach(i => {
+    const dot = document.getElementById("strike" + i);
+    if (dot) {
+      dot.className = "dot strike" + (i <= strike ? " active" : "");
+    }
+  });
+}
+function updateOutDots() {
+  const outCount = parseInt(localStorage.getItem("out") || "0");
+
+  if (outCount >= 3) {
+    localStorage.setItem("ball", "0");
+    localStorage.setItem("strike", "0");
+    localStorage.setItem("out", "0");
+    localStorage.setItem("base1", "false");
+    localStorage.setItem("base2", "false");
+    localStorage.setItem("base3", "false");
+
+    let inning = localStorage.getItem("inning") || "1회초";
+    const num = parseInt(inning);
+    if (inning.includes("말")) {
+      localStorage.setItem("inning", (num + 1) + "회초");
+    } else {
+      localStorage.setItem("inning", num + "회말");
+    }
+  }
+
+  document.getElementById("dot1").classList.toggle("active", outCount >= 1);
+  document.getElementById("dot2").classList.toggle("active", outCount >= 2);
+}</script>
+<script>
+const ws = new WebSocket("ws://" + location.hostname + ":8765");
+
+ws.onopen = () => console.log("✅ WebSocket 연결됨");
+ws.onerror = (e) => console.error("❌ WebSocket 오류", e);
+
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log("📥 수신:", data);
+
+  if (["score1", "score2"].includes(data.type)) {
+    const el = document.getElementById(data.type);
+    if (el) el.textContent = data.value;
+    localStorage.setItem(data.type, data.value);
+  }
+
+  if (["ball", "strike", "out"].includes(data.type)) {
+    localStorage.setItem(data.type, data.value);
+    updateCountDots();
+    updateOutDots();
+  }
+
+  if (data.type === "inning") {
+    localStorage.setItem("inning", data.value);
+    const inning = document.getElementById("inning");
+    if (inning) inning.textContent = data.value;
+  }
+
+  if (["base1", "base2", "base3"].includes(data.type)) {
+    const baseValue = data.value === true || data.value === "true";
+    localStorage.setItem(data.type, baseValue ? "true" : "false");
+    updateBases();
+  }
+
+  if (data.type === "team1" || data.type === "team2") {
+    localStorage.setItem(data.type, data.value);
+    const el = document.getElementById(data.type);
+    if (el) el.textContent = data.value;
+  }
+};
+</script></body>
+</html>
