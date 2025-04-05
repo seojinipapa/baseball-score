@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>스코어 입력 - 디버깅</title>
+<style>
+    /* --- 동일한 CSS 스타일 --- */
+    body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+    .section { margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"] { width: calc(50% - 12px); padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; display: inline-block; }
+    input[type="text"]:first-of-type { margin-right: 5px; }
+    .team-inputs label { margin-bottom: 5px; }
+    .button-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .button-group button { padding: 8px 12px; font-size: 16px; cursor: pointer; }
+    .score-controls { display: flex; align-items: center; gap: 5px; }
+    .score-label { font-weight: bold; min-width: 60px; text-align: right; margin-right: 3px; }
+    .score-controls span[id^="score"] { font-weight: bold; font-size: 1.2em; min-width: 20px; text-align: center; padding: 0 5px; background-color: #eee; border-radius: 3px; }
+    .checkbox-group label { margin-right: 10px; cursor: pointer; }
+    .status-alert { animation: flash 0.4s ease-in-out 2; }
+    @keyframes flash { 0%, 100% { background-color: transparent; } 50% { background-color: yellow; } }
+     #ball_status, #strike_status, #out_status, #inning_status { margin-top: 5px; font-weight: bold; padding: 5px; background-color: #e9e9e9; border-radius: 4px; }
+     #out_status span { display: inline-block; width: 12px; height: 12px; margin: 0 2px; border-radius: 50%; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1>스코어보드 입력 - 디버깅</h1>
+<div class="section team-inputs">
+<label>팀명</label>
+<input id="team1" placeholder="팀1 이름" type="text"/>
+<input id="team2" placeholder="팀2 이름" type="text"/>
+</div>
+<div class="section">
+<label>점수 조정</label>
+<div class="button-group">
+<div class="score-controls">
+<span class="score1-label score-label">팀1</span>:
+          <button id="btn-score1-plus">+</button>
+<span id="score1">0</span>
+<button id="btn-score1-minus">-</button>
+</div>
+<span> | </span>
+<div class="score-controls">
+<span class="score2-label score-label">팀2</span>:
+          <button id="btn-score2-plus">+</button>
+<span id="score2">0</span>
+<button id="btn-score2-minus">-</button>
+</div>
+</div>
+<button id="reset-score">점수 리셋</button>
+</div>
+<div class="section">
+<label>볼카운트</label>
+<div class="button-group">
+<span>B:</span><button id="btn-ball-plus">+</button><button id="btn-ball-minus">-</button>
+<span>S:</span><button id="btn-strike-plus">+</button><button id="btn-strike-minus">-</button>
+<span>O:</span><button id="btn-out-plus">+</button><button id="btn-out-minus">-</button>
+</div>
+<div id="ball_status">볼: 0</div>
+<div id="strike_status">스트라이크: 0</div>
+<div id="out_status">아웃: </div>
+<button id="reset-counts">카운트 리셋</button>
+</div>
+<div class="section">
+<label>이닝</label>
+<div class="button-group">
+<button id="btn-inning-minus">-</button><span id="inning_status">1회초</span><button id="btn-inning-plus">+</button>
+</div>
+<button id="reset-inning">이닝 리셋</button>
+</div>
+<div class="section">
+<label>주루상황</label>
+<div class="checkbox-group">
+<label><input id="base1" type="checkbox"/> 1루</label>
+<label><input id="base2" type="checkbox"/> 2루</label>
+<label><input id="base3" type="checkbox"/> 3루</label>
+</div>
+<button id="reset-bases">주루 리셋</button>
+</div>
+<script>
+let ws;
+
+let ballCount = 0;
+let strikeCount = 0;
+let outCount = 0;
+let inning = 1;
+let bases = [false, false, false]; // 1루, 2루, 3루
+
+function send(type, value) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const data = { type, value };
+    console.log("📤 전송:", data);
+    ws.send(JSON.stringify(data));
+  }
+}
+
+function updateBallDisplay() {
+  const el = document.getElementById("ball_status");
+  if (el) {
+    el.textContent = "볼: " + ballCount;
+  }
+  send("ball", ballCount);
+}
+
+function updateStrikeDisplay() {
+  const el = document.getElementById("strike_status");
+  if (el) {
+    el.textContent = "스트라이크: " + strikeCount;
+  }
+  send("strike", strikeCount);
+}
+
+function updateOutDisplay() {
+  const el = document.getElementById("out_status");
+  if (el) {
+    el.textContent = "아웃: " + outCount;
+  }
+  send("out", outCount);
+}
+
+function updateInningDisplay() {
+  const el = document.getElementById("inning_status");
+  if (el) {
+    el.textContent = "이닝: " + inning;
+  }
+  send("inning", inning);
+}
+
+function resetBaseAndCounts() {
+  bases = [false, false, false];
+  ballCount = 0;
+  strikeCount = 0;
+  updateBallDisplay();
+  updateStrikeDisplay();
+  send("base1", false);
+  send("base2", false);
+  send("base3", false);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  ws = new WebSocket("ws://" + location.hostname + ":8765");
+
+  document.getElementById("btn-ball-plus")?.addEventListener("click", () => {
+    ballCount++;
+    if (ballCount >= 4) {
+      ballCount = 0;
+    }
+    updateBallDisplay();
+  });
+
+  document.getElementById("btn-ball-minus")?.addEventListener("click", () => {
+    if (ballCount > 0) {
+      ballCount--;
+      updateBallDisplay();
+    }
+  });
+
+  document.getElementById("btn-strike-plus")?.addEventListener("click", () => {
+        strikeCount++;
+        if (strikeCount >= 3) {
+          strikeCount = 0;
+          ballCount = 0;
+          base1 = base2 = base3 = false;
+          outCount++;
+          updateOutDisplay();
+          updateBaseDisplay();
+          updateBallDisplay();
+          updateStrikeDisplay();
+          if (outCount >= 3) {
+            outCount = 0;
+            if (isTop) {
+              isTop = false;
+            } else {
+              if (inningNum < 12) inningNum++;
+              isTop = true;
+            }
+            updateInningDisplay();
+            updateOutDisplay();
+            updateBaseDisplay();
+            updateBallDisplay();
+            updateStrikeDisplay();
+          }
+        }
+    if (strikeCount >= 3) {
+      strikeCount = 0;
+      updateStrikeDisplay();
+      outCount++;
+      if (outCount >= 3) {
+        outCount = 0;
+        inning++;
+        resetBaseAndCounts();
+        updateInningDisplay();
+      }
+      updateOutDisplay();
+    } else {
+      updateStrikeDisplay();
+    }
+  });
+
+  document.getElementById("btn-strike-minus")?.addEventListener("click", () => {
+    if (strikeCount > 0) {
+      strikeCount--;
+      updateStrikeDisplay();
+    }
+  });
+
+  document.getElementById("btn-out-plus")?.addEventListener("click", () => {
+    outCount++;
+    if (outCount >= 3) {
+      outCount = 0;
+      inning++;
+      resetBaseAndCounts();
+      updateInningDisplay();
+    }
+    updateOutDisplay();
+  });
+
+  document.getElementById("btn-out-minus")?.addEventListener("click", () => {
+    if (outCount > 0) {
+      outCount--;
+      updateOutDisplay();
+    }
+  });
+});</script></body>
+</html>

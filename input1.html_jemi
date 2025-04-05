@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>스코어 입력 - 디버깅</title>
+<style>
+    /* --- 동일한 CSS 스타일 --- */
+    body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+    .section { margin-bottom: 20px; background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"] { width: calc(50% - 12px); padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; display: inline-block; }
+    input[type="text"]:first-of-type { margin-right: 5px; }
+    .team-inputs label { margin-bottom: 5px; }
+    .button-group { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .button-group button { padding: 8px 12px; font-size: 16px; cursor: pointer; }
+    .score-controls { display: flex; align-items: center; gap: 5px; }
+    .score-label { font-weight: bold; min-width: 60px; text-align: right; margin-right: 3px; }
+    .score-controls span[id^="score"] { font-weight: bold; font-size: 1.2em; min-width: 20px; text-align: center; padding: 0 5px; background-color: #eee; border-radius: 3px; }
+    .checkbox-group label { margin-right: 10px; cursor: pointer; }
+    .status-alert { animation: flash 0.4s ease-in-out 2; }
+    @keyframes flash { 0%, 100% { background-color: transparent; } 50% { background-color: yellow; } }
+     #ball_status, #strike_status, #out_status, #inning_status { margin-top: 5px; font-weight: bold; padding: 5px; background-color: #e9e9e9; border-radius: 4px; }
+     #out_status span { display: inline-block; width: 12px; height: 12px; margin: 0 2px; border-radius: 50%; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1>스코어보드 입력 - 디버깅</h1>
+
+<div class="section team-inputs">
+  <label>팀명</label>
+  <input id="team1" placeholder="팀1 이름" type="text"/>
+  <input id="team2" placeholder="팀2 이름" type="text"/>
+</div>
+
+<div class="section">
+  <label>점수 조정</label>
+  <div class="button-group">
+      <div class="score-controls">
+          <span class="score1-label score-label">팀1</span>:
+          <button id="btn-score1-plus">+</button>
+          <span id="score1">0</span>
+          <button id="btn-score1-minus">-</button>
+      </div>
+      <span>&nbsp;|&nbsp;</span>
+      <div class="score-controls">
+          <span class="score2-label score-label">팀2</span>:
+          <button id="btn-score2-plus">+</button>
+          <span id="score2">0</span>
+          <button id="btn-score2-minus">-</button>
+      </div>
+  </div>
+  <button id="reset-score">점수 리셋</button>
+</div>
+
+<div class="section">
+    <label>볼카운트</label>
+    <div class="button-group">
+        <span>B:</span><button id="btn-ball-plus">+</button><button id="btn-ball-minus">-</button>
+        <span>S:</span><button id="btn-strike-plus">+</button><button id="btn-strike-minus">-</button>
+        <span>O:</span><button id="btn-out-plus">+</button><button id="btn-out-minus">-</button>
+    </div>
+    <div id="ball_status">볼: 0</div>
+    <div id="strike_status">스트라이크: 0</div>
+    <div id="out_status">아웃: </div>
+    <button id="reset-counts">카운트 리셋</button>
+</div>
+<div class="section">
+    <label>이닝</label>
+    <div class="button-group">
+        <button id="btn-inning-minus">-</button><span id="inning_status">1회초</span><button id="btn-inning-plus">+</button>
+    </div>
+    <button id="reset-inning">이닝 리셋</button>
+</div>
+<div class="section">
+    <label>주루상황</label>
+    <div class="checkbox-group">
+        <label><input id="base1" type="checkbox"/> 1루</label>
+        <label><input id="base2" type="checkbox"/> 2루</label>
+        <label><input id="base3" type="checkbox"/> 3루</label>
+    </div>
+    <button id="reset-bases">주루 리셋</button>
+</div>
+
+<script>
+// --- Global Variables ---
+let ws;
+const TEAM1_INPUT_ID = 'team1';
+const TEAM2_INPUT_ID = 'team2';
+const TEAM1_LABEL_CLASS = 'score1-label';
+const TEAM2_LABEL_CLASS = 'score2-label';
+const SCORE1_ID = 'score1';
+const SCORE2_ID = 'score2';
+
+// --- Initialization ---
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("[Debug] DOM 로드 완료. 초기화 시작.");
+  // initializeWebSocket(); // WebSocket 잠시 비활성화
+  loadStateFromLocalStorage();
+  setupEventListeners();
+  updateAllDisplays();
+  console.log("[Debug] 초기화 완료.");
+});
+
+function initializeWebSocket() {
+  console.log("[Debug] WebSocket 초기화 시도...");
+  ws = null; // 비활성화 상태
+  if (ws) {
+      // ... (ws 핸들러들)
+  } else {
+      console.warn("[Debug] WebSocket 비활성화 상태입니다.");
+  }
+}
+
+function loadStateFromLocalStorage() {
+    console.log("[Debug] localStorage에서 상태 로드 (실제 로드는 updateAllDisplays에서)");
+}
+
+function setupEventListeners() {
+    console.log("[Debug] 이벤트 리스너 설정 시작.");
+
+    // Team Name Inputs (Requirement 1)
+    const team1Input = document.getElementById(TEAM1_INPUT_ID);
+    const team2Input = document.getElementById(TEAM2_INPUT_ID);
+
+    if (team1Input) {
+        team1Input.addEventListener('input', handleTeamNameInput);
+        console.log(`[Debug] ${TEAM1_INPUT_ID} 'input' 리스너 추가됨.`);
+    } else {
+        console.error(`[Debug] Error: ID '${TEAM1_INPUT_ID}' 요소를 찾을 수 없음!`);
+    }
+
+    if (team2Input) {
+        team2Input.addEventListener('input', handleTeamNameInput);
+        console.log(`[Debug] ${TEAM2_INPUT_ID} 'input' 리스너 추가됨.`);
+    } else {
+         console.error(`[Debug] Error: ID '${TEAM2_INPUT_ID}' 요소를 찾을 수 없음!`);
+    }
+
+    // Score Buttons (Requirement 2)
+    document.getElementById("btn-score1-plus")?.addEventListener("click", () => adjustScore(SCORE1_ID, 1));
+    document.getElementById("btn-score1-minus")?.addEventListener("click", () => adjustScore(SCORE1_ID, -1));
+    document.getElementById("btn-score2-plus")?.addEventListener("click", () => adjustScore(SCORE2_ID, 1));
+    document.getElementById("btn-score2-minus")?.addEventListener("click", () => adjustScore(SCORE2_ID, -1));
+    document.getElementById("reset-score")?.addEventListener("click", resetScores);
+
+    // --- 나머지 리스너 설정 (생략) ---
+    document.getElementById("btn-ball-plus")?.addEventListener("click", () => adjustCount('ball', 1));
+    document.getElementById("btn-ball-minus")?.addEventListener("click", () => adjustCount('ball', -1));
+    document.getElementById("btn-strike-plus")?.addEventListener("click", () => adjustCount('strike', 1));
+    document.getElementById("btn-strike-minus")?.addEventListener("click", () => adjustCount('strike', -1));
+    document.getElementById("btn-out-plus")?.addEventListener("click", () => adjustCount('out', 1));
+    document.getElementById("btn-out-minus")?.addEventListener("click", () => adjustCount('out', -1));
+    document.getElementById("reset-counts")?.addEventListener("click", resetCounts);
+    document.getElementById("btn-inning-plus")?.addEventListener("click", () => adjustInning(1));
+    document.getElementById("btn-inning-minus")?.addEventListener("click", () => adjustInning(-1));
+    document.getElementById("reset-inning")?.addEventListener("click", resetInning);
+    document.getElementById("base1")?.addEventListener("change", handleBaseChange);
+    document.getElementById("base2")?.addEventListener("change", handleBaseChange);
+    document.getElementById("base3")?.addEventListener("change", handleBaseChange);
+    document.getElementById("reset-bases")?.addEventListener("click", resetBases);
+
+
+    console.log("[Debug] 이벤트 리스너 설정 완료.");
+}
+
+// --- Event Handlers ---
+
+function handleTeamNameInput(event) {
+    console.log(`[Debug] handleTeamNameInput 호출됨. 이벤트 타겟 ID: ${event.target.id}`);
+    const inputId = event.target.id;
+    const teamName = event.target.value.trim();
+    const labelClass = (inputId === TEAM1_INPUT_ID) ? TEAM1_LABEL_CLASS : TEAM2_LABEL_CLASS;
+    const placeholder = event.target.placeholder;
+    const finalName = teamName || placeholder; // Use placeholder if input is empty
+
+    console.log(`[Debug]   - Input ID: ${inputId}`);
+    console.log(`[Debug]   - Trimmed Value: "${teamName}"`);
+    console.log(`[Debug]   - Placeholder: "${placeholder}"`);
+    console.log(`[Debug]   - Final Name: "${finalName}"`);
+    console.log(`[Debug]   - Target Label Class: ${labelClass}`);
+
+    // Update Label (Requirement 1)
+    updateTeamLabel(labelClass, finalName);
+
+    // Save to localStorage
+    localStorage.setItem(inputId + '_name', finalName);
+    // console.log(`[Debug]   - localStorage 저장: key=${inputId + '_name'}, value=${finalName}`);
+
+    // Send via WebSocket
+    send(inputId, finalName);
+}
+
+function handleBaseChange(event) {
+    const baseId = event.target.id;
+    const isChecked = event.target.checked;
+    console.log(`[Debug] handleBaseChange: id=${baseId}, checked=${isChecked}`);
+    localStorage.setItem(baseId, isChecked);
+    send(baseId, isChecked);
+}
+
+// --- Update Functions ---
+
+function updateTeamLabel(labelClass, teamName) {
+    console.log(`[Debug] updateTeamLabel 호출: Class=${labelClass}, Name="${teamName}"`);
+    const labels = document.querySelectorAll('.' + labelClass);
+    console.log(`[Debug]   - 선택된 라벨 수: ${labels.length}`);
+
+    if (labels.length > 0) {
+        labels.forEach((label, index) => {
+            console.log(`[Debug]   - 라벨 ${index+1} 업데이트 전: "${label.textContent}"`);
+            label.textContent = teamName;
+            console.log(`[Debug]   - 라벨 ${index+1} 업데이트 후: "${label.textContent}"`);
+        });
+    } else {
+        console.warn(`[Debug] 경고: 클래스 '${labelClass}'를 가진 라벨을 찾을 수 없습니다!`);
+    }
+}
+
+function updateScoreDisplay(scoreId) {
+    const score = localStorage.getItem(scoreId) || "0";
+    const scoreElement = document.getElementById(scoreId);
+    if (scoreElement) {
+        scoreElement.textContent = score;
+    } else {
+         console.warn(`[Debug] 경고: ID '${scoreId}'를 가진 점수 요소를 찾을 수 없습니다.`);
+    }
+}
+
+// --- (updateCountDisplay, updateInningDisplay, updateBaseDisplay, updateTeamNameInputs 생략 - 이전과 동일) ---
+function updateCountDisplay(type) { const count = localStorage.getItem(type) || "0"; const statusElement = document.getElementById(type + "_status"); if (!statusElement) return; let prefix = ""; if (type === 'ball') prefix = "볼: "; else if (type === 'strike') prefix = "스트라이크: "; else if (type === 'out') prefix = "아웃: "; if (type === 'out') { let html = prefix; for (let i = 0; i < 3; i++) { html += `<span style="background-color:${i < parseInt(count) ? 'red' : '#ddd'};"></span>`; } statusElement.innerHTML = html; } else { statusElement.textContent = prefix + count; } }
+function updateInningDisplay() { const inning = localStorage.getItem("inning") || "1회초"; const statusElement = document.getElementById("inning_status"); if (statusElement) { statusElement.textContent = inning; } }
+function updateBaseDisplay(baseId) { const isChecked = localStorage.getItem(baseId) === "true"; const checkbox = document.getElementById(baseId); if (checkbox) { checkbox.checked = isChecked; } }
+function updateTeamNameInputs() { const team1Name = localStorage.getItem(TEAM1_INPUT_ID + '_name') || ''; const team2Name = localStorage.getItem(TEAM2_INPUT_ID + '_name') || ''; const team1Input = document.getElementById(TEAM1_INPUT_ID); const team2Input = document.getElementById(TEAM2_INPUT_ID); if (team1Input) team1Input.value = team1Name; if (team2Input) team2Input.value = team2Name; }
+
+
+function updateAllDisplays() {
+    console.log("[Debug] updateAllDisplays 호출됨.");
+    const team1Name = localStorage.getItem(TEAM1_INPUT_ID + '_name') || document.getElementById(TEAM1_INPUT_ID)?.placeholder || '팀1';
+    const team2Name = localStorage.getItem(TEAM2_INPUT_ID + '_name') || document.getElementById(TEAM2_INPUT_ID)?.placeholder || '팀2';
+    console.log(`[Debug]   - 초기 팀명 로드: Team1="${team1Name}", Team2="${team2Name}"`);
+    updateTeamNameInputs();
+    updateTeamLabel(TEAM1_LABEL_CLASS, team1Name);
+    updateTeamLabel(TEAM2_LABEL_CLASS, team2Name);
+    updateScoreDisplay(SCORE1_ID);
+    updateScoreDisplay(SCORE2_ID);
+    updateCountDisplay('ball');
+    updateCountDisplay('strike');
+    updateCountDisplay('out');
+    updateInningDisplay();
+    updateBaseDisplay('base1');
+    updateBaseDisplay('base2');
+    updateBaseDisplay('base3');
+    console.log("[Debug] updateAllDisplays 완료.");
+}
+
+
+// --- Action Functions ---
+function adjustScore(scoreId, delta) {
+  console.log(`[Debug] adjustScore: id=${scoreId}, delta=${delta}`);
+  let currentScore = parseInt(localStorage.getItem(scoreId) || "0");
+  let newScore = Math.max(0, currentScore + delta);
+  localStorage.setItem(scoreId, newScore);
+  updateScoreDisplay(scoreId);
+  highlightEffect(scoreId);
+  send(scoreId, newScore);
+}
+
+function resetScores() { console.log("[Debug] resetScores"); localStorage.setItem(SCORE1_ID, "0"); localStorage.setItem(SCORE2_ID, "0"); updateScoreDisplay(SCORE1_ID); updateScoreDisplay(SCORE2_ID); send(SCORE1_ID, 0); send(SCORE2_ID, 0); }
+function adjustCount(type, change) { /* console.log(`[Debug] adjustCount: type=${type}, change=${change}`); */ let value = parseInt(localStorage.getItem(type) || "0"); const maxValues = { ball: 3, strike: 2, out: 2 }; let sendUpdate = true; if (type === "strike") { let newValue = value + change; if (newValue > maxValues.strike) { handleStrikeout(); sendUpdate = false; } else { value = Math.max(0, newValue); } if (sendUpdate) localStorage.setItem(type, value); } else if (type === "ball") { let newValue = value + change; if (newValue > maxValues.ball) { handleWalk(); sendUpdate = false; } else { value = Math.max(0, newValue); } if (sendUpdate) localStorage.setItem(type, value); } else if (type === "out") { let newValue = value + change; if (newValue > maxValues.out) { handleThirdOut(); return; } else { value = Math.max(0, newValue); } localStorage.setItem(type, value); sendUpdate = true; } if (sendUpdate) { updateCountDisplay(type); highlightEffect(type + "_status"); send(type, value); } }
+function handleStrikeout() { console.log("[Debug] handleStrikeout!"); localStorage.setItem("strike", 0); localStorage.setItem("ball", 0); highlightEffect("strike_status"); highlightEffect("ball_status"); adjustCount("out", 1); }
+function handleWalk() { console.log("[Debug] handleWalk!"); localStorage.setItem("ball", 0); localStorage.setItem("strike", 0); highlightEffect("ball_status"); highlightEffect("strike_status"); updateCountDisplay('ball'); updateCountDisplay('strike'); send("ball", 0); send("strike", 0); }
+function handleThirdOut() { console.log("[Debug] handleThirdOut!"); incrementInning(); }
+function resetCounts() { console.log("[Debug] resetCounts"); localStorage.setItem("ball", "0"); localStorage.setItem("strike", "0"); localStorage.setItem("out", "0"); updateCountDisplay('ball'); updateCountDisplay('strike'); updateCountDisplay('out'); send("ball", 0); send("strike", 0); send("out", 0); }
+function adjustInning(change) { console.log(`[Debug] adjustInning: change=${change}`); let inning = localStorage.getItem("inning") || "1회초"; const innArr = []; for (let i = 1; i <= 9; i++) { innArr.push(i + "회초"); innArr.push(i + "회말"); } let currentIndex = innArr.indexOf(inning); if (currentIndex === -1) currentIndex = 0; let newIndex = Math.max(0, Math.min(currentIndex + change, innArr.length - 1)); const newInning = innArr[newIndex]; if (newInning !== inning || change !== 0) { console.log(`[Debug]   - 이닝 변경: ${inning} -> ${newInning}`); localStorage.setItem("inning", newInning); localStorage.setItem("ball", 0); localStorage.setItem("strike", 0); localStorage.setItem("out", 0); resetBases(false); updateAllDisplays(); highlightEffect("inning_status"); send("inning_change", { inning: newInning, out: 0, ball: 0, strike: 0, base1: false, base2: false, base3: false }); } }
+function incrementInning() { console.log("[Debug] incrementInning"); adjustInning(1); }
+function resetInning() { console.log("[Debug] resetInning"); localStorage.setItem("inning", "1회초"); resetCounts(); resetBases(false); updateAllDisplays(); send("inning_change", { inning: "1회초", out: 0, ball: 0, strike: 0, base1: false, base2: false, base3: false }); }
+function resetBases(sendUpdates = true) { console.log(`[Debug] resetBases (sendUpdates=${sendUpdates})`); const bases = ['base1', 'base2', 'base3']; bases.forEach(baseId => { localStorage.setItem(baseId, false); updateBaseDisplay(baseId); if (sendUpdates) { send(baseId, false); } }); }
+
+
+// --- WebSocket Communication ---
+function send(type, value) {
+  // WebSocket 비활성화 상태에서는 아무것도 안 함 (로그도 생략)
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const data = { type, value };
+    // console.log("📤 전송:", data); // 필요시 주석 해제
+    ws.send(JSON.stringify(data));
+  }
+}
+
+// --- Effects ---
+function highlightEffect(elementId) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.classList.remove("status-alert");
+        void el.offsetWidth; // Reflow
+        el.classList.add("status-alert");
+        setTimeout(() => { el.classList.remove("status-alert"); }, 800);
+    }
+}
+
+</script>
+</body>
+</html>

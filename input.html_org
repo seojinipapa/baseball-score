@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>스코어 입력</title>
+<style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .section {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .button-group button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+    .checkbox-group label {
+      margin-right: 10px;
+    }
+  
+.status-alert {
+  color: red;
+  font-weight: bold;
+  animation: flash 0.3s ease-in-out 2;
+}
+@keyframes flash {
+  0% { background-color: yellow; }
+  50% { background-color: transparent; }
+  100% { background-color: yellow; }
+}
+
+.status-alert {
+  color: red;
+  font-weight: bold;
+  animation: flash 0.3s ease-in-out 2;
+}
+@keyframes flash {
+  0% { background-color: yellow; }
+  50% { background-color: transparent; }
+  100% { background-color: yellow; }
+}
+</style>
+</head>
+<body>
+<h1>스코어보드 입력</h1>
+<div class="section">
+<label>팀명</label>
+<input id="team1" oninput="localStorage.setItem('team1', this.value); document.getElementById('label1').textContent = this.value + ':'" placeholder="화식초" type="text"/><button onclick="document.getElementById('team1').value=''; localStorage.removeItem('team1'); document.getElementById('label1').textContent = '팀명1:'">리셋</button>
+<input id="team2" oninput="localStorage.setItem('team2', this.value); document.getElementById('label2').textContent = this.value + ':'" placeholder="명식초" type="text"/><button onclick="document.getElementById('team2').value=''; localStorage.removeItem('team2'); document.getElementById('label2').textContent = '팀명2:'">리셋</button>
+</div>
+<div class="section">
+<label>점수 조정</label>
+<div class="button-group">
+<span id="label1">화식초:</span>
+<button onclick="adjustScore('score1', 1)">+</button>
+<button onclick="adjustScore('score1', -1)">-</button>
+<span id="label2">명식초:</span>
+<button onclick="adjustScore('score2', 1)">+</button>
+<button onclick="adjustScore('score2', -1)">-</button>
+</div>
+<button onclick="localStorage.removeItem('score1'); localStorage.removeItem('score2')">리셋</button><div id="score_status" style="margin-top: 5px; font-weight: bold;">점수 상태 - 화식초: 0 / 명식초: 0</div></div>
+<div class="section">
+<label>볼카운트</label>
+<div class="button-group">
+<span>볼:</span>
+<button onclick="adjustCount('ball', 1)">+</button>
+<button onclick="adjustCount('ball', -1)">-</button>
+<span>스트라이크:</span>
+<button onclick="adjustCount('strike', 1)">+</button>
+<button onclick="adjustCount('strike', -1)">-</button>
+</div>
+<button onclick="localStorage.removeItem('ball'); localStorage.removeItem('strike')">리셋</button><div id="ball_status" style="margin-top: 5px; font-weight: bold;">볼카운트 상태: 0</div><div id="strike_status" style="margin-top: 5px; font-weight: bold;">스트라이크 상태: 0</div></div>
+<div class="section">
+<label>아웃</label>
+<div class="button-group">
+<button onclick="adjustCount('out', 1)">+</button>
+<button onclick="adjustCount('out', -1)">-</button>
+</div>
+<button onclick="localStorage.removeItem('out')">리셋</button><div id="out_status" style="margin-top: 5px; font-weight: bold;">아웃 상태: 0</div></div>
+<div class="section">
+<label id="inning_label">이닝</label>
+<button onclick="localStorage.removeItem('inning')">리셋</button><div class="button-group"><button onclick="adjustInning(-1)">-</button><button onclick="adjustInning(1)">+</button></div><div id="inning_status" style="margin-top: 5px; font-weight: bold;">이닝 상태: 0</div></div>
+<div class="section">
+<label>주루상황</label>
+<div class="checkbox-group">
+<label><input id="base1" onchange="localStorage.setItem('base1', this.checked)" type="checkbox"/> 1루</label>
+<label><input id="base2" onchange="localStorage.setItem('base2', this.checked)" type="checkbox"/> 2루</label>
+<label><input id="base3" onchange="localStorage.setItem('base3', this.checked)" type="checkbox"/> 3루</label>
+</div>
+<button onclick="localStorage.removeItem('base1'); localStorage.removeItem('base2'); localStorage.removeItem('base3')">리셋</button></div>
+<script>
+function resetOut() {
+  localStorage.setItem("out", "0");
+  localStorage.setItem("ball", "0");
+  localStorage.setItem("strike", "0");
+
+  const dot1 = document.getElementById('dot1');
+  const dot2 = document.getElementById('dot2');
+  if (dot1) dot1.classList.remove('active');
+  if (dot2) dot2.classList.remove('active');
+
+  updateStatusDisplay();
+}
+
+
+
+function updateStatusDisplay() {
+  document.getElementById("ball_status").textContent = "볼카운트 상태: " + (localStorage.getItem("ball") || 0);
+  document.getElementById("strike_status").textContent = "스트라이크 상태: " + (localStorage.getItem("strike") || 0);
+  document.getElementById("out_status").textContent = "아웃 상태: " + (localStorage.getItem("out") || 0);
+  document.getElementById("inning_status").textContent = "이닝 상태: " + (localStorage.getItem("inning") || "1회초");
+  document.getElementById("score_status").textContent = "점수 상태 - 화식초: " + (localStorage.getItem("score1") || 0) + " / 명식초: " + (localStorage.getItem("score2") || 0);
+
+  // 주루상황 체크박스 동기화
+  ['base1', 'base2', 'base3'].forEach(id => {
+    document.getElementById(id).checked = localStorage.getItem(id) === "true";
+  });
+
+  // 아웃 공 두 개 상태 표시용
+  const outSection = document.getElementById("out_status");
+  if (outSection) {
+    const outCount = parseInt(localStorage.getItem("out") || "0");
+    let html = "아웃 상태: ";
+    for (let i = 0; i < 2; i++) {
+      html += `<span style="display:inline-block;width:12px;height:12px;margin:2px;border-radius:50%;background-color:${i < outCount ? 'red' : '#ddd'};"></span>`;
+    }
+    outSection.innerHTML = html;
+  }
+}
+
+function highlightEffect(id) {
+  const el = document.getElementById(id);
+  el.classList.add("status-alert");
+  setTimeout(() => el.classList.remove("status-alert"), 800);
+}
+
+function adjustScore(id, change) {
+  let el = localStorage.getItem(id) || "0";
+  let newVal = Math.max(0, parseInt(el) + change);
+  localStorage.setItem(id, newVal);
+  updateStatusDisplay();
+}
+
+function adjustCount(type, change) {
+  let value = parseInt(localStorage.getItem(type) || "0");
+  if (type === "strike") {
+    if (value >= 2 && change > 0) {
+      localStorage.setItem("strike", 0);
+      localStorage.setItem("ball", 0);
+      highlightEffect("strike_status");
+      highlightEffect("ball_status");
+      let out = parseInt(localStorage.getItem("out") || "0") + 1;
+      localStorage.setItem("out", out);
+      highlightEffect("out_status");
+      if (out >= 3) {
+        incrementInning();
+        localStorage.setItem("out", 0);
+        localStorage.setItem("ball", 0);
+        localStorage.setItem("strike", 0);
+        localStorage.setItem("base1", false);
+        localStorage.setItem("base2", false);
+        localStorage.setItem("base3", false);
+        highlightEffect("inning_status");
+      }
+    } else {
+      value = Math.min(2, Math.max(0, value + change));
+      localStorage.setItem(type, value);
+    }
+  } else if (type === "ball") {
+    if (value >= 3 && change > 0) {
+      localStorage.setItem("ball", 0);
+      localStorage.setItem("strike", 0);
+      highlightEffect("ball_status");
+      highlightEffect("strike_status");
+    } else {
+      value = Math.min(3, Math.max(0, value + change));
+      localStorage.setItem(type, value);
+    }
+  } else if (type === "out") {
+    value = Math.min(3, Math.max(0, value + change));
+    localStorage.setItem(type, value);
+    if (value >= 3) {
+      incrementInning();
+      resetOut();
+      updateStatusDisplay();
+    }
+  }
+  updateStatusDisplay();
+}
+
+function incrementInning() {
+  let inning = localStorage.getItem("inning") || "1회초";
+  let num = parseInt(inning);
+  let isTop = inning.includes("초");
+  let step = isTop ? 0 : 1;
+  let idx = (num - 1) * 2 + step + 1;
+
+  if (idx > 17) idx = 17;
+
+  const innArr = [];
+  for (let i = 1; i <= 9; i++) {
+    innArr.push(i + "회초");
+    innArr.push(i + "회말");
+  }
+
+  localStorage.setItem("inning", innArr[idx]);
+
+  // 이닝 바뀌면 주루상황 리셋
+  localStorage.setItem("base1", false);
+  localStorage.setItem("base2", false);
+  localStorage.setItem("base3", false);
+  updateStatusDisplay();
+}
+
+function adjustInning(change) {
+  let inning = localStorage.getItem("inning") || "1회초";
+  let num = parseInt(inning);
+  let isTop = inning.includes("초");
+  let step = isTop ? 0 : 1;
+  let idx = (num - 1) * 2 + step + change;
+
+  if (idx < 0) idx = 0;
+  if (idx > 17) idx = 17;
+
+  const innArr = [];
+  for (let i = 1; i <= 9; i++) {
+    innArr.push(i + "회초");
+    innArr.push(i + "회말");
+  }
+
+  localStorage.setItem("inning", innArr[idx]);
+
+  // 주루상황 리셋
+  localStorage.setItem("base1", false);
+  localStorage.setItem("base2", false);
+  localStorage.setItem("base3", false);
+  updateStatusDisplay();
+}
+
+// onload 및 리셋 버튼 UI 동기화
+window.onload = () => {
+  updateStatusDisplay();
+  document.querySelectorAll("button").forEach(btn => {
+    if (btn.textContent.includes("리셋")) {
+      btn.addEventListener("click", () => setTimeout(updateStatusDisplay, 100));
+    }
+  });
+};</script></body>
+</html>
